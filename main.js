@@ -1,21 +1,42 @@
+const dom = (() => {
+  const _elements = {
+    cells: Array.from(document.querySelectorAll('.cell'))
+  };
+
+  const get = (element) => _elements[element];
+
+  return { get }
+})();
+
+const Player = (marker) => {
+  let _marker = marker;
+
+  const getMarker = () => _marker;
+
+  return { getMarker };
+}
+
 const gameBoard = (() => {
-  let board = Array(9).fill('.');
-  const cells = Array.from(document.querySelectorAll('.cell'));
+  let _board = Array(9).fill('x');
+
   const render = () => {
-    for (let i = 0; i < 9; i++) {
-      cells[i].textContent = board[i];
+    for (let i = 0; i < _board.length; i++) {
+      dom.get('cells')[i].textContent = _board[i];
     }
   };
 
-  render();
+  const placeMarker = () => {
 
-  return { cells };
+  }
+
+  return { };
 })();
 
 const gameController = (() => {
+  const playerOne = Player('X');
+
+  const _init = (() => {
+  })();
+
   return {};
 })();
-
-const Player = () => {
-  return {};
-}
