@@ -18,7 +18,9 @@ const Player = (marker) => {
 
   const getMarker = () => _marker;
 
-  return { getMarker };
+  const setMarker = (marker) => _marker = marker;
+
+  return { getMarker, setMarker };
 }
 
 const gameBoard = (() => {
@@ -33,10 +35,12 @@ const gameBoard = (() => {
   })();
 
   const setMarker = function(marker) {
-    const index = Number(this.dataset.index);
+    if (!this.textContent) {
+      const index = Number(this.dataset.index);
 
-    _board[index] = marker;
-    dom.setMarker(index, marker);
+      _board[index] = marker;
+      dom.setMarker(index, marker);
+    }
   }
 
   return { getBoard, setMarker };
