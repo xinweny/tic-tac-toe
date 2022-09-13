@@ -1,36 +1,47 @@
 const dom = (() => {
   const _elements = {
-    cells: Array.from(document.querySelectorAll('.cell'))
+    cells: Array.from(document.querySelectorAll('.cell')),
+    turnDisplay: document.getElementById('turn-display'),
+    endMessage: document.querySelector('.end-msg p')
   };
 
   const get = element => _elements[element];
 
-  const setMarker = (index, marker) => {
-    const cell = _elements['cells'][index]; 
-    cell.textContent = marker;
-  }
+  const setMarker = (cell, marker) => cell.textContent = marker;
+
+  const setText = (element, text) => _elements[element].textContent = text
 
   return { 
     get, 
-    setMarker }
+    setMarker,
+    setText 
+  }
 })();
 
-const Player = (marker, current) => {
+const Player = (marker) => {
   let _marker = marker;
   let _hasTurn = false;
+  let _winner = false;
 
   const getMarker = () => _marker;
 
   const setMarker = marker => _marker = marker;
 
   const hasTurn = () => _hasTurn;
+
   const switchTurn = () => _hasTurn = !_hasTurn;
+
+  const isWinner = () => _winner;
+
+  const winGame = () => _winner = true;
 
   return { 
     getMarker,
     setMarker,
     hasTurn,
-    switchTurn
+    switchTurn,
+    isWinner,
+    winGame
   };
 }
 
@@ -49,20 +60,58 @@ const gameBoard = (() => {
     _board[index] = marker;
   }
 
-  return { getBoard, setMarker };
+  return { 
+    getBoard, 
+    setMarker 
+  };
 })();
 
 const gameController = (() => {
   const xPlayer = Player('X');
   const oPlayer = Player('O');
-  let turn = 0;
+
+  const _winPositions = [
+    [0, 1, 2],
+    [3, 4, 5],
+    [6, 7, 8],
+    [0, 3, 6],
+    [1, 4, 7],
+    [2, 5, 8],
+    [0, 4, 8],
+    [2, 4, 6]
+  ];
+
+  let _hasWinner = undefined;
 
   const getCurrentPlayer = () => (xPlayer.hasTurn()) ? xPlayer : oPlayer;
 
   const switchPlayerTurns = () => {
     xPlayer.switchTurn();
     oPlayer.switchTurn();
-    turn += 1;
+
+    const currentPlayer = getCurrentPlayer();
+    dom.setText('turnDisplay', `Player ${currentPlayer.getMarker()}'s turn`)
+  }
+
+  const checkForWin = () => {
+    const board = gameBoard.getBoard();
+    if (!board.includes('')) dom.setText('endMessage', 'Tie');
+
+    for (const pos of _winPositions) {
+      let markers = pos.map(i => board[i]);
+      if (markers.every(e => e == 'X')) {
+        endGame(xPlayer);
+        return xPlayer;
+      } else if (markers.every(e => e == 'O')) {
+        endGame(oPlayer);
+        return oPlayer;
+      }
+    }
+  }
+
+  const endGame = player => {
+    player.winGame();
+    dom.setText('endMessage', `Player ${player.getMarker()} wins!`);
   }
 
   const playTurn = function() {
@@ -73,14 +122,14 @@ const gameController = (() => {
       const marker = currentPlayer.getMarker();
 
       gameBoard.setMarker(index, marker);
-      dom.setMarker(index, marker);
+      dom.setMarker(this, marker);
 
-      switchPlayerTurns();
+      _hasWinner = checkForWin();
+      if (!_hasWinner) switchPlayerTurns();
     }
   }
 
   const _init = (() => {
-    turn += 1;
     xPlayer.switchTurn();
 
     for (let i = 0; i < gameBoard.getBoard().length; i++) {
