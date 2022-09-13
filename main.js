@@ -10,17 +10,28 @@ const dom = (() => {
     cell.textContent = marker;
   }
 
-  return { get, setMarker }
+  return { 
+    get, 
+    setMarker }
 })();
 
-const Player = (marker) => {
+const Player = (marker, current) => {
   let _marker = marker;
+  let _hasTurn = false;
 
   const getMarker = () => _marker;
 
-  const setMarker = (marker) => _marker = marker;
+  const setMarker = marker => _marker = marker;
 
-  return { getMarker, setMarker };
+  const hasTurn = () => _hasTurn;
+  const switchTurn = () => _hasTurn = !_hasTurn;
+
+  return { 
+    getMarker,
+    setMarker,
+    hasTurn,
+    switchTurn
+  };
 }
 
 const gameBoard = (() => {
@@ -34,27 +45,49 @@ const gameBoard = (() => {
     }
   })();
 
-  const setMarker = function(marker) {
-    if (!this.textContent) {
-      const index = Number(this.dataset.index);
-
-      _board[index] = marker;
-      dom.setMarker(index, marker);
-    }
+  const setMarker = function(index, marker) {
+    _board[index] = marker;
   }
 
   return { getBoard, setMarker };
 })();
 
 const gameController = (() => {
-  const _init = () => {
+  const xPlayer = Player('X');
+  const oPlayer = Player('O');
+  let turn = 0;
+
+  const getCurrentPlayer = () => (xPlayer.hasTurn()) ? xPlayer : oPlayer;
+
+  const switchPlayerTurns = () => {
+    xPlayer.switchTurn();
+    oPlayer.switchTurn();
+    turn += 1;
+  }
+
+  const playTurn = function() {
+    if (!this.textContent) {
+      const currentPlayer = getCurrentPlayer();
+
+      const index = Number(this.dataset.index);
+      const marker = currentPlayer.getMarker();
+
+      gameBoard.setMarker(index, marker);
+      dom.setMarker(index, marker);
+
+      switchPlayerTurns();
+    }
+  }
+
+  const _init = (() => {
+    turn += 1;
+    xPlayer.switchTurn();
+
     for (let i = 0; i < gameBoard.getBoard().length; i++) {
       let cell = dom.get('cells')[i];
-      cell.addEventListener('click', gameBoard.setMarker.bind(cell, 'a'));
+      cell.addEventListener('click', playTurn.bind(cell));
     }
-  };
-
-  _init()
+  })();
 
   return {};
 })();
