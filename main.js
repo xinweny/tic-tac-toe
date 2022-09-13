@@ -18,11 +18,14 @@ const dom = (() => {
 
   const setText = (element, text) => _elements[element].textContent = text;
 
+  const clearText = element => _elements[element].textContent = undefined;
+
   return { 
     get, 
     setMarker,
     clearMarkers,
-    setText
+    setText,
+    clearText
   }
 })();
 
@@ -155,6 +158,7 @@ const gameController = (() => {
 
     xPlayer.setAsFirst();
     dom.setText('turnDisplay', `Player ${xPlayer.getMarker()}'s turn`);
+    dom.clearText('endMessage');
   }
 
   const _init = (() => {
