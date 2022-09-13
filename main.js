@@ -3,9 +3,14 @@ const dom = (() => {
     cells: Array.from(document.querySelectorAll('.cell'))
   };
 
-  const get = (element) => _elements[element];
+  const get = element => _elements[element];
 
-  return { get }
+  const setMarker = (index, marker) => {
+    const cell = _elements['cells'][index]; 
+    cell.textContent = marker;
+  }
+
+  return { get, setMarker }
 })();
 
 const Player = (marker) => {
@@ -17,26 +22,35 @@ const Player = (marker) => {
 }
 
 const gameBoard = (() => {
-  let _board = Array(9).fill('x');
+  let _board = Array(9).fill('');
 
-  const render = () => {
+  const getBoard = () => _board;
+
+  const render = (() => {
     for (let i = 0; i < _board.length; i++) {
       dom.get('cells')[i].textContent = _board[i];
     }
-  };
+  })();
 
-  const placeMarker = () => {
+  const setMarker = function(marker) {
+    const index = Number(this.dataset.index);
 
+    _board[index] = marker;
+    dom.setMarker(index, marker);
   }
 
-  return { };
+  return { getBoard, setMarker };
 })();
 
 const gameController = (() => {
-  const playerOne = Player('X');
+  const _init = () => {
+    for (let i = 0; i < gameBoard.getBoard().length; i++) {
+      let cell = dom.get('cells')[i];
+      cell.addEventListener('click', gameBoard.setMarker.bind(cell, 'a'));
+    }
+  };
 
-  const _init = (() => {
-  })();
+  _init()
 
   return {};
 })();
