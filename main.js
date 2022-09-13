@@ -2,19 +2,27 @@ const dom = (() => {
   const _elements = {
     cells: Array.from(document.querySelectorAll('.cell')),
     turnDisplay: document.getElementById('turn-display'),
-    endMessage: document.querySelector('.end-msg p')
+    endMessage: document.querySelector('.end-msg p'),
+    resetButton: document.getElementById('reset-btn')
   };
 
   const get = element => _elements[element];
 
   const setMarker = (cell, marker) => cell.textContent = marker;
 
-  const setText = (element, text) => _elements[element].textContent = text
+  const clearMarkers = () => {
+    for (const cell of _elements.cells) {
+      cell.textContent = undefined;
+    }
+  }
+
+  const setText = (element, text) => _elements[element].textContent = text;
 
   return { 
     get, 
     setMarker,
-    setText 
+    clearMarkers,
+    setText
   }
 })();
 
@@ -29,6 +37,8 @@ const Player = (marker) => {
 
   const hasTurn = () => _hasTurn;
 
+  const setAsFirst = () => _hasTurn = true;
+
   const switchTurn = () => _hasTurn = !_hasTurn;
 
   const isWinner = () => _winner;
@@ -39,6 +49,7 @@ const Player = (marker) => {
     getMarker,
     setMarker,
     hasTurn,
+    setAsFirst,
     switchTurn,
     isWinner,
     winGame
@@ -46,23 +57,28 @@ const Player = (marker) => {
 }
 
 const gameBoard = (() => {
-  let _board = Array(9).fill('');
+  let _board = new Array(9);
 
   const getBoard = () => _board;
 
-  const render = (() => {
+  const _render = (() => {
     for (let i = 0; i < _board.length; i++) {
       dom.get('cells')[i].textContent = _board[i];
     }
   })();
 
-  const setMarker = function(index, marker) {
+  const setMarker = (index, marker) => {
     _board[index] = marker;
+  }
+
+  const clearBoard = () => {
+    _board = new Array(9);
   }
 
   return { 
     getBoard, 
-    setMarker 
+    setMarker,
+    clearBoard 
   };
 })();
 
@@ -81,7 +97,7 @@ const gameController = (() => {
     [2, 4, 6]
   ];
 
-  let _hasWinner = undefined;
+  let _winner = undefined;
 
   const getCurrentPlayer = () => (xPlayer.hasTurn()) ? xPlayer : oPlayer;
 
@@ -90,12 +106,12 @@ const gameController = (() => {
     oPlayer.switchTurn();
 
     const currentPlayer = getCurrentPlayer();
-    dom.setText('turnDisplay', `Player ${currentPlayer.getMarker()}'s turn`)
+    dom.setText('turnDisplay', `Player ${currentPlayer.getMarker()}'s turn`);
   }
 
   const checkForWin = () => {
     const board = gameBoard.getBoard();
-    if (!board.includes('')) dom.setText('endMessage', 'Tie');
+    if (!board.includes(undefined)) dom.setText('endMessage', 'Tie');
 
     for (const pos of _winPositions) {
       let markers = pos.map(i => board[i]);
@@ -112,6 +128,10 @@ const gameController = (() => {
   const endGame = player => {
     player.winGame();
     dom.setText('endMessage', `Player ${player.getMarker()} wins!`);
+
+    for (const cell of dom.get('cells')) {
+      cell.removeEventListener('click', playTurn);
+    }
   }
 
   const playTurn = function() {
@@ -124,18 +144,28 @@ const gameController = (() => {
       gameBoard.setMarker(index, marker);
       dom.setMarker(this, marker);
 
-      _hasWinner = checkForWin();
-      if (!_hasWinner) switchPlayerTurns();
+      _winner = checkForWin();
+      if (!_winner) switchPlayerTurns();
     }
   }
 
+  const resetGame = () => {
+    gameBoard.clearBoard();
+    dom.clearMarkers();
+
+    xPlayer.setAsFirst();
+    dom.setText('turnDisplay', `Player ${xPlayer.getMarker()}'s turn`);
+  }
+
   const _init = (() => {
-    xPlayer.switchTurn();
+    xPlayer.setAsFirst();
 
     for (let i = 0; i < gameBoard.getBoard().length; i++) {
       let cell = dom.get('cells')[i];
-      cell.addEventListener('click', playTurn.bind(cell));
+      cell.addEventListener('click', playTurn);
     }
+
+    dom.get('resetButton').addEventListener('click', resetGame);
   })();
 
   return {};
