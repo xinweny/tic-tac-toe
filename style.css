@@ -26,5 +26,13 @@
 }
 
 button.clicked {
+  background-color: black;
+}
+
+.x {
+  color: blue;
+}
+
+.o {
   color: red;
 }

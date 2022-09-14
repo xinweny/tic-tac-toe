@@ -10,7 +10,17 @@ const dom = (() => {
 
   const get = element => _elements[element];
 
-  const setMarker = (cell, marker) => cell.textContent = marker;
+  const setMarker = (cell, marker) => {
+    cell.textContent = marker;
+
+    if (marker == 'X') {
+      cell.classList.add('x');
+      if (cell.classList.contains('o')) cell.classList.remove('o');
+    } else if (marker == 'O') {
+      cell.classList.add('o');
+      if (cell.classList.contains('x')) cell.classList.remove('x');
+    }
+  }
 
   const clearMarkers = () => {
     for (const cell of _elements.cells) {
