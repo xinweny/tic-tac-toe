@@ -128,19 +128,31 @@ const Player = (marker) => {
 
 const huPlayer = Player('X');
 
-const AI = (marker, level) => {
+const aiPlayer = ((marker, level) => {
   // Inherit methods from Player
   let AI = Object.create(Player(marker));
-  let _level = level;
+  let _level = 'easy';
 
   AI.playTurn = function() {
     const boardState = gameBoard.getBoard().map((e) => e);
     const currentMarker = gameController.getCurrentPlayer().getMarker();
+    let chosenMove = null;
 
-    const bestMove = this.minimax(boardState, currentMarker).index;
+    switch (_level) {
+      case 'easy':
+        chosenMove = this.makeRandomMove(boardState);
+        break;
+      case 'medium':
+        break;
+      case 'difficult':
+        break;
+      case 'impossible':
+        chosenMove = this.minimax(boardState, currentMarker).index;
+        break;
+    }
 
-    gameBoard.setMarker(bestMove, this.getMarker());
-    dom.setMarker(dom.get('cells')[bestMove], this.getMarker());
+    gameBoard.setMarker(chosenMove, this.getMarker());
+    dom.setMarker(dom.get('cells')[chosenMove], this.getMarker());
 
     // End turn
     gameController.endTurn();
@@ -192,13 +204,19 @@ const AI = (marker, level) => {
         }
       }
     }
+    
     return allTestMoveInfos[bestTestMove];
   }
 
-  return AI;
-}
+  AI.makeRandomMove = function(boardState) {
+    const emptyCellIdxs = boardState.filter(e => typeof e === 'number');
+    const randIdx = Math.floor(Math.random() * emptyCellIdxs.length);
 
-const aiPlayer = AI('O');
+    return emptyCellIdxs[randIdx];
+  }
+
+  return AI;
+})('O');
 
 const gameController = (() => {
   let _hasWinner = false;
