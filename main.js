@@ -295,7 +295,7 @@ const gameController = (() => {
   const endGame = player => {
     if (player) {
       player.winGame();
-      dom.setText('endMessage', `Player ${player.getMarker()} wins!`);
+      dom.setText('endMessage', `${player.getMarker()} wins!`);
     } else {
       dom.setText('endMessage', 'Tie');
     }
