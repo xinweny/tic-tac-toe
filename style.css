@@ -24,3 +24,7 @@
 .cell:hover {
   background-color: aquamarine;
 }
+
+button.clicked {
+  color: red;
+}

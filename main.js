@@ -1,10 +1,11 @@
 const dom = (() => {
   const _elements = {
     cells: Array.from(document.querySelectorAll('.cell')),
-    turnDisplay: document.getElementById('turn-display'),
     endMessage: document.querySelector('.end-msg p'),
     resetButton: document.getElementById('reset-btn'),
-    selectDifficulty: document.querySelector('select#difficulty')
+    selectDifficulty: document.querySelector('select#difficulty'),
+    xButton: document.getElementById('x-btn'),
+    oButton: document.getElementById('o-btn')
   };
 
   const get = element => _elements[element];
@@ -21,14 +22,88 @@ const dom = (() => {
 
   const clearText = element => _elements[element].textContent = undefined;
 
+  const addEvtListener = function(element, event, callback) {
+    if (element == 'cells') {
+      for (let i = 0; i < 9; i++) {
+        let cell = _elements[element][i];
+        cell.addEventListener(event, callback, false);
+      }
+    } else {
+      _elements[element].addEventListener(event, callback, false);
+    }
+  }
+
+  const addClass = (element, cls) => _elements[element].classList.add(cls);
+
+  const removeClass = (element, cls) => {
+    const classList = _elements[element].classList;
+    if (classList.contains(cls)) classList.remove(cls);
+  }
+
+  const toggleDisabled = (element) => _elements[element].disabled = !_elements[element].disabled;
+
   return { 
     get, 
     setMarker,
     clearMarkers,
     setText,
-    clearText
+    clearText,
+    addEvtListener,
+    addClass,
+    removeClass,
+    toggleDisabled
   }
 })();
+
+const Player = (marker) => {
+  let _marker = marker;
+  let _hasTurn = false;
+  let _winner = false;
+
+  const getMarker = () => _marker;
+
+  const setMarker = marker => _marker = marker;
+
+  const hasTurn = () => _hasTurn;
+
+  const setTurn = bool => _hasTurn = bool;
+
+  const switchTurn = () => _hasTurn = !_hasTurn;
+
+  const isWinner = () => _winner;
+
+  const winGame = () => _winner = true;
+
+  const resetWin = () => _winner = false;
+
+  const playTurn = function() {
+    if (!this.textContent) {
+      const currentPlayer = gameController.getCurrentPlayer();
+
+      const index = Number(this.dataset.index);
+      const marker = currentPlayer.getMarker();
+
+      gameBoard.setMarker(index, marker);
+      dom.setMarker(this, marker);
+
+      gameController.endTurn();
+    }
+  }
+
+  return { 
+    getMarker,
+    setMarker,
+    hasTurn,
+    setTurn,
+    switchTurn,
+    isWinner,
+    winGame,
+    playTurn,
+    resetWin
+  };
+}
+
+const huPlayer = Player('X');
 
 const gameBoard = ((board) => {
   let _board = board || Array.from(Array(9).keys());
@@ -48,6 +123,8 @@ const gameBoard = ((board) => {
     for (let i = 0; i < _board.length; i++) {
       dom.get('cells')[i].textContent = (typeof _board[i] === 'number') ? '' : _board[i];
     }
+
+    dom.addEvtListener('cells', 'click', huPlayer.playTurn);
   })();
 
   const getBoard = () => _board;
@@ -82,64 +159,17 @@ const gameBoard = ((board) => {
   };
 })();
 
-const Player = (marker) => {
-  let _marker = marker;
-  let _hasTurn = false;
-  let _winner = false;
-
-  const getMarker = () => _marker;
-
-  const setMarker = marker => _marker = marker;
-
-  const hasTurn = () => _hasTurn;
-
-  const setAsFirst = () => _hasTurn = true;
-
-  const switchTurn = () => _hasTurn = !_hasTurn;
-
-  const isWinner = () => _winner;
-
-  const winGame = () => _winner = true;
-
-  const playTurn = function() {
-    if (!this.textContent) {
-      const currentPlayer = gameController.getCurrentPlayer();
-
-      const index = Number(this.dataset.index);
-      const marker = currentPlayer.getMarker();
-
-      gameBoard.setMarker(index, marker);
-      dom.setMarker(this, marker);
-
-      gameController.endTurn();
-    }
-  }
-
-  return { 
-    getMarker,
-    setMarker,
-    hasTurn,
-    setAsFirst,
-    switchTurn,
-    isWinner,
-    winGame,
-    playTurn
-  };
-}
-
-const huPlayer = Player('X');
-
 const aiPlayer = ((marker, level) => {
   // Inherit methods from Player
-  let AI = Object.create(Player(marker));
-  let _level = 'easy';
+  let aiPlayer = Object.create(Player(marker));
+  let _level = level;
 
-  AI.setLevel = function() {
+  aiPlayer.setLevel = function() {
     _level = this.value;
     gameController.resetGame()
   }
 
-  AI.playTurn = function() {
+  aiPlayer.playTurn = function() {
     const boardState = gameBoard.getBoard().map((e) => e);
     const currentMarker = gameController.getCurrentPlayer().getMarker();
     let chosenMove = null;
@@ -149,8 +179,10 @@ const aiPlayer = ((marker, level) => {
         chosenMove = this.makeRandomMove(boardState);
         break;
       case 'medium':
+        chosenMove = this.pickMoveStyle(0.5, boardState, currentMarker);
         break;
       case 'hard':
+        chosenMove = this.pickMoveStyle(0.8, boardState, currentMarker);
         break;
       case 'impossible':
         chosenMove = this.minimax(boardState, currentMarker).index;
@@ -164,7 +196,7 @@ const aiPlayer = ((marker, level) => {
     gameController.endTurn();
   }
   
-  AI.minimax = function(boardState, currMark) {
+  aiPlayer.minimax = function(boardState, currMark) {
     // Get indexes of all empty cells
     const emptyCellIdxs = boardState.filter(e => typeof e === 'number');
 
@@ -214,14 +246,24 @@ const aiPlayer = ((marker, level) => {
     return allTestMoveInfos[bestTestMove];
   }
 
-  AI.makeRandomMove = function(boardState) {
+  aiPlayer.makeRandomMove = function(boardState) {
     const emptyCellIdxs = boardState.filter(e => typeof e === 'number');
     const randIdx = Math.floor(Math.random() * emptyCellIdxs.length);
 
     return emptyCellIdxs[randIdx];
   }
 
-  return AI;
+  aiPlayer.pickMoveStyle = function(threshold, boardState, currMark) {
+    const rand = Math.random();
+
+    if (rand > threshold) {
+      return this.makeRandomMove(boardState);
+    } else {
+      return this.minimax(boardState, currMark).index;
+    }
+  }
+
+  return aiPlayer;
 })('O', 'easy');
 
 const gameController = (() => {
@@ -235,7 +277,6 @@ const gameController = (() => {
     aiPlayer.switchTurn();
 
     const currentPlayer = getCurrentPlayer();
-    dom.setText('turnDisplay', `Player ${currentPlayer.getMarker()}'s turn`);
 
     checkWinner();
     if (!_hasWinner && !_isTie && aiPlayer.hasTurn()) aiPlayer.playTurn();
@@ -275,24 +316,53 @@ const gameController = (() => {
   }
 
   const resetGame = () => {
+    _hasWinner = false;
+    _isTie = false;
+    huPlayer.resetWin();
+    aiPlayer.resetWin();
+
     gameBoard.clearBoard();
     dom.clearMarkers();
 
-    huPlayer.setAsFirst();
-    dom.setText('turnDisplay', `Player ${huPlayer.getMarker()}'s turn`);
     dom.clearText('endMessage');
+    dom.addEvtListener('cells', 'click', huPlayer.playTurn);
+    if (dom.get('xButton').classList.contains('clicked')) {
+      huPlayer.setTurn(true);
+      aiPlayer.setTurn(false);
+    } else {
+      aiPlayer.setTurn(true);
+      huPlayer.setTurn(false);
+
+      aiPlayer.playTurn();
+    }
+  }
+
+  const _setHumanAsMarker = function() {
+    if (this.dataset.marker == 'X') {
+      dom.addClass('xButton', 'clicked');
+      dom.removeClass('oButton', 'clicked');
+
+      dom.toggleDisabled('xButton');
+      if (dom.get('oButton').disabled) dom.toggleDisabled('oButton');
+
+    } else if (this.dataset.marker == 'O') {
+      dom.addClass('oButton', 'clicked');
+      dom.removeClass('xButton', 'clicked');
+
+      dom.toggleDisabled('oButton');
+      if (dom.get('xButton').disabled) dom.toggleDisabled('xButton');
+    }
+
+    resetGame();
   }
 
   const _init = (() => {
-    huPlayer.setAsFirst();
+    huPlayer.setTurn(true);
 
-    for (let i = 0; i < gameBoard.getBoard().length; i++) {
-      let cell = dom.get('cells')[i];
-      cell.addEventListener('click', huPlayer.playTurn, false);
-    }
-
-    dom.get('selectDifficulty').addEventListener('change', aiPlayer.setLevel, false)
-    dom.get('resetButton').addEventListener('click', resetGame, false);
+    dom.addEvtListener('selectDifficulty', 'change', aiPlayer.setLevel);
+    dom.addEvtListener('resetButton', 'click', resetGame);
+    dom.addEvtListener('xButton', 'click', _setHumanAsMarker);
+    dom.addEvtListener('oButton', 'click', _setHumanAsMarker);
   })();
 
   return {
