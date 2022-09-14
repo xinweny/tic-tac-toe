@@ -3,7 +3,8 @@ const dom = (() => {
     cells: Array.from(document.querySelectorAll('.cell')),
     turnDisplay: document.getElementById('turn-display'),
     endMessage: document.querySelector('.end-msg p'),
-    resetButton: document.getElementById('reset-btn')
+    resetButton: document.getElementById('reset-btn'),
+    selectDifficulty: document.querySelector('select#difficulty')
   };
 
   const get = element => _elements[element];
@@ -133,6 +134,11 @@ const aiPlayer = ((marker, level) => {
   let AI = Object.create(Player(marker));
   let _level = 'easy';
 
+  AI.setLevel = function() {
+    _level = this.value;
+    gameController.resetGame()
+  }
+
   AI.playTurn = function() {
     const boardState = gameBoard.getBoard().map((e) => e);
     const currentMarker = gameController.getCurrentPlayer().getMarker();
@@ -144,7 +150,7 @@ const aiPlayer = ((marker, level) => {
         break;
       case 'medium':
         break;
-      case 'difficult':
+      case 'hard':
         break;
       case 'impossible':
         chosenMove = this.minimax(boardState, currentMarker).index;
@@ -216,7 +222,7 @@ const aiPlayer = ((marker, level) => {
   }
 
   return AI;
-})('O');
+})('O', 'easy');
 
 const gameController = (() => {
   let _hasWinner = false;
@@ -268,7 +274,7 @@ const gameController = (() => {
     }
   }
 
-  const _resetGame = () => {
+  const resetGame = () => {
     gameBoard.clearBoard();
     dom.clearMarkers();
 
@@ -285,11 +291,13 @@ const gameController = (() => {
       cell.addEventListener('click', huPlayer.playTurn, false);
     }
 
-    dom.get('resetButton').addEventListener('click', _resetGame, false);
+    dom.get('selectDifficulty').addEventListener('change', aiPlayer.setLevel, false)
+    dom.get('resetButton').addEventListener('click', resetGame, false);
   })();
 
   return {
     endTurn,
-    getCurrentPlayer
+    getCurrentPlayer,
+    resetGame
   };
 })();
