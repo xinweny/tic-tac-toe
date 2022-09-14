@@ -29,6 +29,58 @@ const dom = (() => {
   }
 })();
 
+const gameBoard = ((board) => {
+  let _board = board || Array.from(Array(9).keys());
+
+  const _winPositions = [
+    [0, 1, 2],
+    [3, 4, 5],
+    [6, 7, 8],
+    [0, 3, 6],
+    [1, 4, 7],
+    [2, 5, 8],
+    [0, 4, 8],
+    [2, 4, 6]
+  ];
+
+  const _render = (() => {
+    for (let i = 0; i < _board.length; i++) {
+      dom.get('cells')[i].textContent = (typeof _board[i] === 'number') ? '' : _board[i];
+    }
+  })();
+
+  const getBoard = () => _board;
+
+  const setMarker = (index, marker) => {
+    _board[index] = marker;
+  }
+
+  const clearBoard = () => {
+    _board = Array.from(Array(9).keys());
+  }
+
+  const checkWin = (player, board) => {
+    const gameBoard = board || _board;
+    const marker = player.getMarker();
+
+    for (const pos of _winPositions) {
+      let markers = pos.map(i => gameBoard[i]);
+      if (markers.every(e => e == marker)) {
+        return true;
+      } 
+    }
+
+    return false;
+  }
+
+  return { 
+    getBoard, 
+    setMarker,
+    clearBoard,
+    checkWin
+  };
+})();
+
 const Player = (marker) => {
   let _marker = marker;
   let _hasTurn = false;
@@ -48,98 +100,9 @@ const Player = (marker) => {
 
   const winGame = () => _winner = true;
 
-  return { 
-    getMarker,
-    setMarker,
-    hasTurn,
-    setAsFirst,
-    switchTurn,
-    isWinner,
-    winGame
-  };
-}
-
-const gameBoard = (() => {
-  let _board = new Array(9);
-
-  const getBoard = () => _board;
-
-  const _render = (() => {
-    for (let i = 0; i < _board.length; i++) {
-      dom.get('cells')[i].textContent = _board[i];
-    }
-  })();
-
-  const setMarker = (index, marker) => {
-    _board[index] = marker;
-  }
-
-  const clearBoard = () => {
-    _board = new Array(9);
-  }
-
-  return { 
-    getBoard, 
-    setMarker,
-    clearBoard 
-  };
-})();
-
-const gameController = (() => {
-  const xPlayer = Player('X');
-  const oPlayer = Player('O');
-
-  const _winPositions = [
-    [0, 1, 2],
-    [3, 4, 5],
-    [6, 7, 8],
-    [0, 3, 6],
-    [1, 4, 7],
-    [2, 5, 8],
-    [0, 4, 8],
-    [2, 4, 6]
-  ];
-
-  let _winner = undefined;
-
-  const getCurrentPlayer = () => (xPlayer.hasTurn()) ? xPlayer : oPlayer;
-
-  const switchPlayerTurns = () => {
-    xPlayer.switchTurn();
-    oPlayer.switchTurn();
-
-    const currentPlayer = getCurrentPlayer();
-    dom.setText('turnDisplay', `Player ${currentPlayer.getMarker()}'s turn`);
-  }
-
-  const checkForWin = () => {
-    const board = gameBoard.getBoard();
-    if (!board.includes(undefined)) dom.setText('endMessage', 'Tie');
-
-    for (const pos of _winPositions) {
-      let markers = pos.map(i => board[i]);
-      if (markers.every(e => e == 'X')) {
-        endGame(xPlayer);
-        return xPlayer;
-      } else if (markers.every(e => e == 'O')) {
-        endGame(oPlayer);
-        return oPlayer;
-      }
-    }
-  }
-
-  const endGame = player => {
-    player.winGame();
-    dom.setText('endMessage', `Player ${player.getMarker()} wins!`);
-
-    for (const cell of dom.get('cells')) {
-      cell.removeEventListener('click', playTurn);
-    }
-  }
-
   const playTurn = function() {
     if (!this.textContent) {
-      const currentPlayer = getCurrentPlayer();
+      const currentPlayer = gameController.getCurrentPlayer();
 
       const index = Number(this.dataset.index);
       const marker = currentPlayer.getMarker();
@@ -147,30 +110,168 @@ const gameController = (() => {
       gameBoard.setMarker(index, marker);
       dom.setMarker(this, marker);
 
-      _winner = checkForWin();
-      if (!_winner) switchPlayerTurns();
+      gameController.endTurn();
     }
   }
 
-  const resetGame = () => {
+  return { 
+    getMarker,
+    setMarker,
+    hasTurn,
+    setAsFirst,
+    switchTurn,
+    isWinner,
+    winGame,
+    playTurn
+  };
+}
+
+const huPlayer = Player('X');
+
+const AI = (marker, level) => {
+  // Inherit methods from Player
+  let AI = Object.create(Player(marker));
+  let _level = level;
+
+  AI.playTurn = function() {
+    const boardState = gameBoard.getBoard().map((e) => e);
+    const currentMarker = gameController.getCurrentPlayer().getMarker();
+
+    const bestMove = this.minimax(boardState, currentMarker).index;
+
+    gameBoard.setMarker(bestMove, this.getMarker());
+    dom.setMarker(dom.get('cells')[bestMove], this.getMarker());
+
+    // End turn
+    gameController.endTurn();
+  }
+  
+  AI.minimax = function(boardState, currMark) {
+    // Get indexes of all empty cells
+    const emptyCellIdxs = boardState.filter(e => typeof e === 'number');
+
+    // Check for terminal state
+    if (gameBoard.checkWin(huPlayer, boardState)) {
+      return { score: -1 };
+    } else if (gameBoard.checkWin(aiPlayer, boardState)) {
+      return { score: 1 };
+    } else if (emptyCellIdxs.length === 0) {
+      return { score: 0 };
+    }
+
+    // Test outcome of playing the current player's mark on each empty cell
+    const allTestMoveInfos = [];
+    for (let i = 0; i < emptyCellIdxs.length; i++) {
+      const testMoveInfo = {};
+      testMoveInfo.index = boardState[emptyCellIdxs[i]];
+      boardState[emptyCellIdxs[i]] = currMark;
+
+      const result = (currMark === this.getMarker()) ? this.minimax(boardState, huPlayer.getMarker()) : this.minimax(boardState, this.getMarker());
+
+      testMoveInfo.score = result.score;
+      boardState[emptyCellIdxs[i]] = testMoveInfo.index; // End test play
+
+      allTestMoveInfos.push(testMoveInfo); // Save test-play info
+    }
+
+    let bestTestMove = null;
+    if (currMark === this.getMarker()) {
+      let bestScore = -Infinity;
+      for (let i = 0; i < allTestMoveInfos.length; i++) {
+        if (allTestMoveInfos[i].score > bestScore) {
+          bestScore = allTestMoveInfos[i].score;
+          bestTestMove = i;
+        }
+      }
+    } else {
+      let bestScore = Infinity;
+      for (let i = 0; i < allTestMoveInfos.length; i++) {
+        if (allTestMoveInfos[i].score < bestScore) {
+          bestScore = allTestMoveInfos[i].score;
+          bestTestMove = i;
+        }
+      }
+    }
+    return allTestMoveInfos[bestTestMove];
+  }
+
+  return AI;
+}
+
+const aiPlayer = AI('O');
+
+const gameController = (() => {
+  let _hasWinner = false;
+  let _isTie = false;
+
+  const getCurrentPlayer = () => (huPlayer.hasTurn()) ? huPlayer : aiPlayer;
+
+  const endTurn = () => {
+    huPlayer.switchTurn();
+    aiPlayer.switchTurn();
+
+    const currentPlayer = getCurrentPlayer();
+    dom.setText('turnDisplay', `Player ${currentPlayer.getMarker()}'s turn`);
+
+    checkWinner();
+    if (!_hasWinner && !_isTie && aiPlayer.hasTurn()) aiPlayer.playTurn();
+  }
+
+  const endGame = player => {
+    if (player) {
+      player.winGame();
+      dom.setText('endMessage', `Player ${player.getMarker()} wins!`);
+    } else {
+      dom.setText('endMessage', 'Tie');
+    }
+
+    for (const cell of dom.get('cells')) {
+      cell.removeEventListener('click', huPlayer.playTurn, false);
+    }
+  }
+
+  const checkWinner = function() {
+    _hasWinner = gameBoard.checkWin(huPlayer);
+
+    if (_hasWinner) {
+      huPlayer.winGame();
+    } else {
+      _hasWinner = gameBoard.checkWin(aiPlayer);
+      if (_hasWinner) aiPlayer.winGame();
+    }
+
+    if (huPlayer.isWinner()) { 
+      endGame(huPlayer);
+    } else if (aiPlayer.isWinner()) { 
+      endGame(aiPlayer);
+    } else if (gameBoard.getBoard().every(e => typeof e === 'string')) {
+      _isTie = true;
+      endGame();
+    }
+  }
+
+  const _resetGame = () => {
     gameBoard.clearBoard();
     dom.clearMarkers();
 
-    xPlayer.setAsFirst();
-    dom.setText('turnDisplay', `Player ${xPlayer.getMarker()}'s turn`);
+    huPlayer.setAsFirst();
+    dom.setText('turnDisplay', `Player ${huPlayer.getMarker()}'s turn`);
     dom.clearText('endMessage');
   }
 
   const _init = (() => {
-    xPlayer.setAsFirst();
+    huPlayer.setAsFirst();
 
     for (let i = 0; i < gameBoard.getBoard().length; i++) {
       let cell = dom.get('cells')[i];
-      cell.addEventListener('click', playTurn);
+      cell.addEventListener('click', huPlayer.playTurn, false);
     }
 
-    dom.get('resetButton').addEventListener('click', resetGame);
+    dom.get('resetButton').addEventListener('click', _resetGame, false);
   })();
 
-  return {};
+  return {
+    endTurn,
+    getCurrentPlayer
+  };
 })();
