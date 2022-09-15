@@ -5,43 +5,45 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tic-Tac-Toe</title>
     <link rel="stylesheet" href="./style.css">
+    <link rel="shortcut icon" href="./assets/icon.png" type="image/x-icon">
     <script src="./main.js" defer></script>
   </head>
   <body>
     <div class="header">
-      <h1>Tic-Tac-Toe</h1>
+      <h1>tic-tac-toe</h1>
     </div>
     <div class="content">
       <div class="game-controller">
         <div>
-          <label for="difficulty">Difficulty</label>
           <select name="difficulty" id="difficulty">
-            <option value="easy" selected>Easy</option>
-            <option value="medium">Medium</option>
-            <option value="hard">Hard</option>
-            <option value="impossible">Impossible</option>
+            <option value="easy" selected>EASY</option>
+            <option value="medium">MEDIUM</option>
+            <option value="hard">HARD</option>
+            <option value="impossible">IMPOSSIBLE</option>
           </select>
         </div>
         <div class="marker-btns">
           <button id="x-btn" class="clicked x" data-marker="X">X</button>
           <button id="o-btn" class="o" data-marker="O">O</button>
         </div>
-        <button id="reset-btn">Restart</button>
       </div>
-      <div class="game-grid">
-        <div class="cell" data-index="0"></div>
-        <div class="cell" data-index="1"></div>
-        <div class="cell" data-index="2"></div>
-        <div class="cell" data-index="3"></div>
-        <div class="cell" data-index="4"></div>
-        <div class="cell" data-index="5"></div>
-        <div class="cell" data-index="6"></div>
-        <div class="cell" data-index="7"></div>
-        <div class="cell" data-index="8"></div>
+      <div class="game">
+        <div class="game-grid">
+          <div class="cell" data-index="0"></div>
+          <div class="cell" data-index="1"></div>
+          <div class="cell" data-index="2"></div>
+          <div class="cell" data-index="3"></div>
+          <div class="cell" data-index="4"></div>
+          <div class="cell" data-index="5"></div>
+          <div class="cell" data-index="6"></div>
+          <div class="cell" data-index="7"></div>
+          <div class="cell" data-index="8"></div>
+        </div>
+        <div class="end-msg">
+          <p>test</p>
+        </div>
       </div>
-      <div class="end-msg">
-        <p></p>
-      </div>
+      <button id="reset-btn">RESET</button>
     </div>
     <div class="footer">
       <p>Made by <a href="https://github.com/xinweny">xinweny</a> in 2022</p>

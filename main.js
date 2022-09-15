@@ -52,6 +52,17 @@ const dom = (() => {
 
   const toggleDisabled = (element) => _elements[element].disabled = !_elements[element].disabled;
 
+  const styleEndMessage = function(marker) {
+    if (marker) {
+      this.setText('endMessage', `${marker} WINS!`);
+      _elements['endMessage'].parentElement.style.backgroundColor = (marker == 'X') ? 'rgba(100, 100, 255, 0.5)' : 'rgba(255, 100, 100, 0.5)';
+    } else {
+      this.setText('endMessage', 'TIE');
+      _elements['endMessage'].parentElement.style.backgroundColor = 'rgba(240, 240, 240, 0.5)';
+      _elements['endMessage'].style.color = 'black';
+    }
+  }
+
   return { 
     get, 
     setMarker,
@@ -61,7 +72,8 @@ const dom = (() => {
     addEvtListener,
     addClass,
     removeClass,
-    toggleDisabled
+    toggleDisabled,
+    styleEndMessage
   }
 })();
 
@@ -293,11 +305,13 @@ const gameController = (() => {
   }
 
   const endGame = player => {
+    dom.get('endMessage').parentElement.style.display = 'flex';
+
     if (player) {
       player.winGame();
-      dom.setText('endMessage', `${player.getMarker()} wins!`);
+      dom.styleEndMessage(player.getMarker());
     } else {
-      dom.setText('endMessage', 'Tie');
+      dom.styleEndMessage();
     }
 
     for (const cell of dom.get('cells')) {
@@ -335,6 +349,8 @@ const gameController = (() => {
     dom.clearMarkers();
 
     dom.clearText('endMessage');
+    dom.get('endMessage').parentElement.style.display = 'none';
+
     dom.addEvtListener('cells', 'click', huPlayer.playTurn);
     if (dom.get('xButton').classList.contains('clicked')) {
       huPlayer.setTurn(true);
@@ -349,6 +365,9 @@ const gameController = (() => {
 
   const _setHumanAsMarker = function() {
     if (this.dataset.marker == 'X') {
+      huPlayer.setMarker('X');
+      aiPlayer.setMarker('O');
+
       dom.addClass('xButton', 'clicked');
       dom.removeClass('oButton', 'clicked');
 
@@ -356,6 +375,9 @@ const gameController = (() => {
       if (dom.get('oButton').disabled) dom.toggleDisabled('oButton');
 
     } else if (this.dataset.marker == 'O') {
+      huPlayer.setMarker('O');
+      aiPlayer.setMarker('X');
+
       dom.addClass('oButton', 'clicked');
       dom.removeClass('xButton', 'clicked');
 
