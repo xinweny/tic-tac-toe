@@ -98,15 +98,12 @@ const Player = (marker) => {
 
   const resetWin = () => _winner = false;
 
-  const playTurn = function() {
+  const playTurn = function () {
     if (!this.textContent) {
-      const currentPlayer = gameController.getCurrentPlayer();
-
       const index = Number(this.dataset.index);
-      const marker = currentPlayer.getMarker();
 
-      gameBoard.setMarker(index, marker);
-      dom.setMarker(this, marker);
+      gameBoard.setMarker(index, _marker);
+      dom.setMarker(this, _marker);
 
       gameController.endTurn();
     }
@@ -186,12 +183,12 @@ const aiPlayer = ((marker, level) => {
   let aiPlayer = Object.create(Player(marker));
   let _level = level;
 
-  aiPlayer.setLevel = function() {
+  aiPlayer.setLevel = function () {
     _level = this.value;
     gameController.resetGame()
   }
 
-  aiPlayer.playTurn = function() {
+  aiPlayer.playTurn = function () {
     const boardState = gameBoard.getBoard().map((e) => e);
     const currentMarker = gameController.getCurrentPlayer().getMarker();
     let chosenMove = null;
@@ -319,7 +316,7 @@ const gameController = (() => {
     }
   }
 
-  const checkWinner = function() {
+  const checkWinner = function () {
     _hasWinner = gameBoard.checkWin(huPlayer);
 
     if (_hasWinner) {
@@ -363,7 +360,7 @@ const gameController = (() => {
     }
   }
 
-  const _setHumanAsMarker = function() {
+  const _setHumanAsMarker = function () {
     if (this.dataset.marker == 'X') {
       huPlayer.setMarker('X');
       aiPlayer.setMarker('O');
