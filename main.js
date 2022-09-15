@@ -304,7 +304,7 @@ const gameController = (() => {
     if (!_hasWinner && !_isTie && aiPlayer.hasTurn()) aiPlayer.playTurn();
   }
 
-  const endGame = player => {
+  const _endGame = player => {
     dom.get('endMessage').parentElement.style.display = 'flex';
 
     if (player) {
@@ -330,12 +330,12 @@ const gameController = (() => {
     }
 
     if (huPlayer.isWinner()) { 
-      endGame(huPlayer);
+      _endGame(huPlayer);
     } else if (aiPlayer.isWinner()) { 
-      endGame(aiPlayer);
+      _endGame(aiPlayer);
     } else if (gameBoard.getBoard().every(e => typeof e === 'string')) {
       _isTie = true;
-      endGame();
+      _endGame();
     }
   }
 
